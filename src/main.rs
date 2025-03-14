@@ -11,18 +11,7 @@ fn display_lines(lines: &Vec<String>, start: usize, end: usize) {
     refresh();
 }
 
-fn main() {
-    let mut args = env::args();
-
-    println!("args: {args:#?}");
-
-    if args.len() < 2 {
-        println!("Usage: ./idk <file_name> [<cursor_start_y> <cursor_start_x>]");
-        exit(1);
-    }
-
-    let file_name = args.nth(1).unwrap();
-
+fn get_file_lines(file_name: &String) -> Vec<String> {
     let mut file = match File::open(&file_name) {
         Ok(f) => f,
 
@@ -40,6 +29,21 @@ fn main() {
         exit(1);
     }
 
+    let lines: Vec<String> = file_contents.split("\n").map(|l| l.into()).collect();
+
+    return lines;
+}
+
+fn main() {
+    let mut args = env::args();
+
+    if args.len() < 2 {
+        println!("Usage: ./idk <file_name> [<cursor_start_y> <cursor_start_x>]");
+        exit(1);
+    }
+
+    let file_name = args.nth(1).unwrap();
+
     let (mut cur_x, mut cur_y) = (0, 0);
 
     if let Some(posy) = args.next() {
@@ -50,8 +54,9 @@ fn main() {
         cur_x = posx.parse::<i32>().unwrap();
     }
 
-    let lines: Vec<String> = file_contents.split("\n").map(|l| l.into()).collect();
     let (mut start, mut end) = (0, 1);
+
+    let mut lines = get_file_lines(&file_name);
 
     setlocale(ncurses::LcCategory::all, "").unwrap();
     initscr();
@@ -88,6 +93,11 @@ fn main() {
                         start -= 1;
                     }
                 }
+            }
+
+            // reload
+            b'r' => {
+                lines = get_file_lines(&file_name);
             }
 
             b'q' => break,
