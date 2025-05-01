@@ -84,8 +84,6 @@ fn main() {
             }
 
             b'k' if end > 1 => {
-                println!("start: {start}");
-
                 if end - start < NUM_LINES_TO_SHOW.into() {
                     end -= 1;
 
@@ -93,6 +91,16 @@ fn main() {
                         start -= 1;
                     }
                 }
+            }
+
+            b'g' => {
+                start = 0;
+                end = 1;
+            }
+
+            b'G' => {
+                start = (lines.len() - 1 - NUM_LINES_TO_SHOW as usize).max(0);
+                end = lines.len() - 2;
             }
 
             // reload
