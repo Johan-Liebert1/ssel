@@ -2,4 +2,4 @@
 
 cargo build --release
 
-sudo mv ./target/release/idk /usr/bin
+sudo mv ./target/release/ssel /usr/bin

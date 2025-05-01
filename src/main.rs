@@ -38,7 +38,7 @@ fn main() {
     let mut args = env::args();
 
     if args.len() < 2 {
-        println!("Usage: ./idk <file_name> [<cursor_start_y> <cursor_start_x>]");
+        println!("Usage: ./ssel <file_name> [<cursor_start_y> <cursor_start_x>]");
         exit(1);
     }
 
@@ -70,8 +70,10 @@ fn main() {
 
         display_lines(&lines, start, end);
 
-        match getch() as u8 {
-            b'j' => {
+        let char = getch();
+
+        match char as u8 {
+            b'j' | b's' => {
                 end = if end >= lines.len() - 1 {
                     end
                 } else {
@@ -83,7 +85,7 @@ fn main() {
                 };
             }
 
-            b'k' if end > 1 => {
+            b'k' | b'w' if end > 1 => {
                 if end - start < NUM_LINES_TO_SHOW.into() {
                     end -= 1;
 
