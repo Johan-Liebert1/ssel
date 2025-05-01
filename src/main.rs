@@ -1,7 +1,15 @@
-use ncurses::{addstr, endwin, getch, initscr, ll::clear, mv, refresh, setlocale};
-use std::{env, fs::File, io::Read, process::exit};
+use ncurses::{
+    addstr, clear, endwin, getch, initscr, keypad, mv, noecho, refresh, setlocale, stdscr,
+};
+use std::{
+    env,
+    fs::{self, File},
+    io::{Read, Write},
+    process::exit,
+};
 
 const NUM_LINES_TO_SHOW: u8 = 25;
+const DEBUG: bool = true;
 
 fn display_lines(lines: &Vec<String>, start: usize, end: usize) {
     for line in &lines[start..end] {
@@ -34,6 +42,34 @@ fn get_file_lines(file_name: &String) -> Vec<String> {
     return lines;
 }
 
+fn up(mut start: usize, mut end: usize) -> (usize, usize) {
+    if end > 1 {
+        if end - start < NUM_LINES_TO_SHOW.into() {
+            end -= 1;
+
+            if start >= 1 {
+                start -= 1;
+            }
+        }
+    }
+
+    (start, end)
+}
+
+fn down(mut start: usize, mut end: usize, lines: &Vec<String>) -> (usize, usize) {
+    end = if end >= lines.len() - 1 {
+        end
+    } else {
+        if end - start + 1 >= NUM_LINES_TO_SHOW.into() {
+            start += 1;
+        }
+
+        end + 1
+    };
+
+    (start, end)
+}
+
 fn main() {
     let mut args = env::args();
 
@@ -59,41 +95,34 @@ fn main() {
     let mut lines = get_file_lines(&file_name);
 
     setlocale(ncurses::LcCategory::all, "").unwrap();
+    keypad(stdscr(), true);
     initscr();
 
-    loop {
-        unsafe {
-            clear();
+    let mut file = if DEBUG {
+        if fs::exists("./debug").expect("Failed to check if file exists") {
+            fs::remove_file("./debug").expect("Failed to remove debug file");
         }
 
+        Some(File::create("./debug").unwrap())
+    } else {
+        None
+    };
+
+    loop {
+        clear();
+
         mv(cur_x, cur_y);
+
+        noecho();
 
         display_lines(&lines, start, end);
 
         let char = getch();
 
         match char as u8 {
-            b'j' | b's' => {
-                end = if end >= lines.len() - 1 {
-                    end
-                } else {
-                    if end - start + 1 >= NUM_LINES_TO_SHOW.into() {
-                        start += 1;
-                    }
+            b'j' | b's' => (start, end) = down(start, end, &lines),
 
-                    end + 1
-                };
-            }
-
-            b'k' | b'w' if end > 1 => {
-                if end - start < NUM_LINES_TO_SHOW.into() {
-                    end -= 1;
-
-                    if start >= 1 {
-                        start -= 1;
-                    }
-                }
-            }
+            b'k' | b'w' => (start, end) = up(start, end),
 
             b'g' => {
                 start = 0;
@@ -110,9 +139,32 @@ fn main() {
                 lines = get_file_lines(&file_name);
             }
 
+            // Escape
+            27 => {
+                match getch() {
+                    // [
+                    91 => match getch() as u8 {
+                        // Up Arrow
+                        b'A' => (start, end) = up(start, end),
+
+                        // Down Arrow
+                        b'B' => (start, end) = down(start, end, &lines),
+
+                        _ => {}
+                    },
+
+                    _ => {}
+                }
+            }
+
+            // Quit
             b'q' => break,
 
-            _ => {}
+            x => {
+                if let Some(file) = &mut file {
+                    writeln!(file, "Is a Char: {x}").expect("Failed to write to debug file");
+                }
+            }
         }
     }
 
