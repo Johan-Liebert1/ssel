@@ -42,13 +42,13 @@ fn get_file_lines(file_name: &String) -> Vec<String> {
     return lines;
 }
 
-fn up(mut start: usize, mut end: usize) -> (usize, usize) {
-    if end > 1 {
+fn up(mut start: usize, mut end: usize, by: usize) -> (usize, usize) {
+    if end > by {
         if end - start < NUM_LINES_TO_SHOW.into() {
-            end -= 1;
+            end -= by;
 
-            if start >= 1 {
-                start -= 1;
+            if start >= by {
+                start -= by;
             }
         }
     }
@@ -56,15 +56,15 @@ fn up(mut start: usize, mut end: usize) -> (usize, usize) {
     (start, end)
 }
 
-fn down(mut start: usize, mut end: usize, lines: &Vec<String>) -> (usize, usize) {
-    end = if end >= lines.len() - 1 {
+fn down(mut start: usize, mut end: usize, lines: &Vec<String>, by: usize) -> (usize, usize) {
+    end = if end >= lines.len() - by {
         end
     } else {
-        if end - start + 1 >= NUM_LINES_TO_SHOW.into() {
-            start += 1;
+        if end - start + by >= NUM_LINES_TO_SHOW.into() {
+            start += by;
         }
 
-        end + 1
+        end + by
     };
 
     (start, end)
@@ -119,10 +119,12 @@ fn main() {
 
         let char = getch();
 
-        match char as u8 {
-            b'j' | b's' => (start, end) = down(start, end, &lines),
+        println!("char: {char}");
 
-            b'k' | b'w' => (start, end) = up(start, end),
+        match char as u8 {
+            b'j' | b's' => (start, end) = down(start, end, &lines, 1),
+
+            b'k' | b'w' => (start, end) = up(start, end, 1),
 
             b'g' => {
                 start = 0;
@@ -139,16 +141,26 @@ fn main() {
                 lines = get_file_lines(&file_name);
             }
 
+            // Ctrl + D
+            4 => {
+                (start, end) = down(start, end, &lines, 10)
+            }
+
+            // Ctrl + U
+            21 => {
+                (start, end) = up(start, end, 10)
+            }
+
             // Escape
             27 => {
                 match getch() {
                     // [
                     91 => match getch() as u8 {
                         // Up Arrow
-                        b'A' => (start, end) = up(start, end),
+                        b'A' => (start, end) = up(start, end, 1),
 
                         // Down Arrow
-                        b'B' => (start, end) = down(start, end, &lines),
+                        b'B' => (start, end) = down(start, end, &lines, 1),
 
                         _ => {}
                     },
