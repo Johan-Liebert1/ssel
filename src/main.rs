@@ -119,8 +119,6 @@ fn main() {
 
         let char = getch();
 
-        println!("char: {char}");
-
         match char as u8 {
             b'j' | b's' => (start, end) = down(start, end, &lines, 1),
 
