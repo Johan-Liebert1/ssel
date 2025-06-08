@@ -9,7 +9,7 @@ use std::{
 };
 
 const NUM_LINES_TO_SHOW: u8 = 25;
-const DEBUG: bool = cfg!(not(debug_assertions));
+const DEBUG: bool = false;
 
 fn display_lines(lines: &Vec<String>, start: usize, end: usize) {
     for line in &lines[start..end] {
