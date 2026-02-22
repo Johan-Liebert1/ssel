@@ -6,6 +6,7 @@ use std::{
     fs::{self, File},
     io::{Read, Write},
     process::exit,
+    usize,
 };
 
 const NUM_LINES_TO_SHOW: u8 = 25;
@@ -74,25 +75,51 @@ fn main() {
     let mut args = env::args();
 
     if args.len() < 2 {
-        println!("Usage: ./ssel <file_name> [<cursor_start_y> <cursor_start_x>]");
+        println!("Usage: ./ssel <file_name> [-r,--random] [<cursor_start_y> <cursor_start_x>]");
         exit(1);
     }
 
     let file_name = args.nth(1).unwrap();
 
     let (mut cur_x, mut cur_y) = (0, 0);
+    let mut random = false;
 
-    if let Some(posy) = args.next() {
-        cur_y = posy.parse::<i32>().unwrap();
-    }
+    loop {
+        match args.next() {
+            Some(arg) => match arg.as_str() {
+                "-r" | "--random" => random = true,
 
-    if let Some(posx) = args.next() {
-        cur_x = posx.parse::<i32>().unwrap();
+                pos => {
+                    if cur_y == 0 {
+                        cur_y = pos.parse::<i32>().unwrap();
+                    } else if cur_x == 0 {
+                        cur_x = pos.parse::<i32>().unwrap();
+                    }
+                }
+            },
+
+            None => break,
+        }
     }
 
     let (mut start, mut end) = (0, 1);
 
     let mut lines = get_file_lines(&file_name);
+
+    // shuffle the array
+    if random {
+        for i in 0..lines.len() {
+            let mut r = std::fs::File::open("/dev/urandom").unwrap();
+            let mut buf = [0; 1];
+            r.read_exact(&mut buf).unwrap();
+
+            let j = (buf[0] as usize) % lines.len();
+
+            let temp = lines[i].clone();
+            lines[i] = lines[j].clone();
+            lines[j] = temp;
+        }
+    }
 
     setlocale(ncurses::LcCategory::all, "").unwrap();
     keypad(stdscr(), true);
@@ -140,14 +167,10 @@ fn main() {
             }
 
             // Ctrl + D
-            4 => {
-                (start, end) = down(start, end, &lines, 10)
-            }
+            4 => (start, end) = down(start, end, &lines, 10),
 
             // Ctrl + U
-            21 => {
-                (start, end) = up(start, end, 10)
-            }
+            21 => (start, end) = up(start, end, 10),
 
             // Escape
             27 => {
